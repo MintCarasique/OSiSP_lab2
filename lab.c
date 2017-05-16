@@ -20,7 +20,7 @@ int count_files = 0;
 
 void print_error(const char *scr_name, const char *msg_err, const char *f_name)
 {
-    fprintf(stderr, "%s: %s %s\n", scr_name, msg_err, (f_name) ? f_name : NULL);
+    fprintf(stderr, "%s: %s: %s\n", scr_name, msg_err, (f_name) ? f_name : NULL);
 }
 
 void get_properties(struct stat buf, char *filepath)
@@ -30,16 +30,16 @@ void get_properties(struct stat buf, char *filepath)
 	string = (char *)malloc(sizeof(char)*STRING_SIZE);
 	localtime_r(&buf.st_mtime, &lt);
 	strftime(string, sizeof(char*)*STRING_SIZE, "%d %b %Y", &lt);				
-	fprintf(file,"%s %ld %s %ld\n", filepath, buf.st_size, string, (long)buf.st_ino);
+	fprintf(file,"\n%s %ld %s %ld ", filepath, buf.st_size, string, (long)buf.st_ino);
 	fprintf(file, (buf.st_mode & S_IRUSR) ? "r" : "-");
-	fprintf(file, (buf.st_mode & S_IWUSR) ? "r" : "-");
-	fprintf(file, (buf.st_mode & S_IXUSR) ? "r" : "-");
+	fprintf(file, (buf.st_mode & S_IWUSR) ? "w" : "-");
+	fprintf(file, (buf.st_mode & S_IXUSR) ? "x" : "-");
 	fprintf(file, (buf.st_mode & S_IRGRP) ? "r" : "-");
-	fprintf(file, (buf.st_mode & S_IWGRP) ? "r" : "-");
-	fprintf(file, (buf.st_mode & S_IXGRP) ? "r" : "-");
+	fprintf(file, (buf.st_mode & S_IWGRP) ? "w" : "-");
+	fprintf(file, (buf.st_mode & S_IXGRP) ? "x" : "-");
 	fprintf(file, (buf.st_mode & S_IROTH) ? "r" : "-");
-	fprintf(file, (buf.st_mode & S_IWOTH) ? "r" : "-");
-	fprintf(file, (buf.st_mode & S_IXOTH) ? "r" : "-");
+	fprintf(file, (buf.st_mode & S_IWOTH) ? "w" : "-");
+	fprintf(file, (buf.st_mode & S_IXOTH) ? "x" : "-");
 	free(string);	
 }
 
@@ -55,7 +55,7 @@ int process_directory(char *folder, char *filename, int *file_exist)
 
 	if ((selected_dir = opendir(folder)) == NULL)
 		print_error(script_name, strerror(errno), realpath(folder, filepath));
-
+    else{
 	while((dir = readdir(selected_dir)) != NULL) {
 		if (dir->d_type != DT_DIR) {
 			if (dir->d_type == DT_REG) 
@@ -76,7 +76,7 @@ int process_directory(char *folder, char *filename, int *file_exist)
 							get_properties(buf, filepath);
 							fclose(file);
 						}
-						else { print_error(script_name, strerror(errno), filepath); }
+						else { print_error(script_name, strerror(errno), filepath);}
 					}
 					else
 					{
@@ -85,12 +85,11 @@ int process_directory(char *folder, char *filename, int *file_exist)
 							fclose(file);
 							*file_exist = 1;
 						}
-						else { print_error(script_name, strerror(errno), filepath); }
+						else { print_error(script_name, strerror(errno), filepath);}
 					}
 				}
 				else {
-					fprintf(stderr, "%s : %s : %s\n", script_name, strerror(errno), filepath);
-					continue;
+					fprintf(stderr, "%s : %s : %s", script_name, strerror(errno), filepath); continue;
 				}		
 			}
 		}
@@ -100,20 +99,17 @@ int process_directory(char *folder, char *filename, int *file_exist)
 				if (realpath(folder, filepath) != NULL) {
 					strcat(strcat(filepath,"/"), dir->d_name);
 				}
-				else { print_error(script_name, strerror(errno), realpath(folder, fullpath)); }
+				else { print_error(script_name, strerror(errno), realpath(folder, fullpath)); continue; }
 
             	process_directory(filepath, filename, file_exist);
 			}
 		}
 	}
 
-	if ( errno != 0) {
-		print_error(script_name, strerror(errno), filepath);
-	}
-
-	if (closedir(selected_dir) == -1)
+	if (closedir(selected_dir) == -1){
 		print_error(script_name, strerror(errno), realpath(folder, fullpath));
-
+    }
+}
 	free(filepath);
 }
 
@@ -149,6 +145,6 @@ int main(int argc, char *argv[])
 	process_directory(dir_name, file_name, &flag);
 	print_result(flag);
 
-	printf("\n Каталоги: %d\n Файлы: %d\n", count_dir, count_files);
+	printf("\n%d %d\n", count_dir, count_files);
 	return 0;
 }
